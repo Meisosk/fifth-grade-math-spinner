@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Users from the sign-in dropdown that have saved names. "Anonymous" never hits the server.
-const SAVED_USERS = ["Brianna"];
+const SAVED_USERS = ["4B", "5Math"];
 const MAX_NAMES = 200;
 const MAX_NAME_LENGTH = 50;
 

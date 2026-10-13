@@ -38,7 +38,7 @@ export default function UserPickerDialog({
       <DialogContent>
         <FormControl fullWidth>
           <FormLabel id="user-picker-label" sx={{ mb: 0.75 }}>
-            User
+            Profile
           </FormLabel>
           <Select
             labelId="user-picker-label"

@@ -1,17 +1,25 @@
 import { useState } from "react";
 import {
   Box,
+  Divider,
+  FormControlLabel,
   IconButton,
   Popover,
   Slider,
   SvgIcon,
+  Switch,
   Tooltip,
   Typography,
 } from "@mui/material";
+import { SIT_OUT_SPINS } from "../lib/cooldowns";
 
 interface SpinSettingsProps {
   spinSeconds: number;
   onChange: (seconds: number) => void;
+  focusMode: boolean;
+  onFocusModeChange: (on: boolean) => void;
+  sitOut: boolean;
+  onSitOutChange: (on: boolean) => void;
 }
 
 export const MIN_SPIN_SECONDS = 1;
@@ -26,7 +34,14 @@ function TuneIcon() {
   );
 }
 
-export default function SpinSettings({ spinSeconds, onChange }: SpinSettingsProps) {
+export default function SpinSettings({
+  spinSeconds,
+  onChange,
+  focusMode,
+  onFocusModeChange,
+  sitOut,
+  onSitOutChange,
+}: SpinSettingsProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
   return (
@@ -64,6 +79,36 @@ export default function SpinSettings({ spinSeconds, onChange }: SpinSettingsProp
             valueLabelDisplay="auto"
             onChange={(_, value) => onChange(value as number)}
           />
+          <Divider sx={{ my: 1.5 }} />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={focusMode}
+                onChange={(e) => onFocusModeChange(e.target.checked)}
+              />
+            }
+            label="Focus Spin Wheel"
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            Shows only the wheel and the Spin button.
+          </Typography>
+          {!focusMode && (
+            <>
+              <FormControlLabel
+                sx={{ mt: 1 }}
+                control={
+                  <Switch
+                    checked={sitOut}
+                    onChange={(e) => onSitOutChange(e.target.checked)}
+                  />
+                }
+                label="Sitting out"
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                A picked name can't be picked again for the next {SIT_OUT_SPINS} spins.
+              </Typography>
+            </>
+          )}
         </Box>
       </Popover>
     </>

@@ -1,9 +1,9 @@
 # fifth-grade-math-spinner
 
-A classroom name spinner. Type names into the list, spin, and the picked name sits out the next 3 spins before rejoining the wheel. **Reset** puts everyone back.
+A classroom name spinner. Type names into the list, spin, and the picked name sits out the next 3 spins: it stays on the wheel but can't be picked. **Reset** makes everyone pickable again. Sitting out can be turned off in the settings.
 
-- On load, a popup asks who's spinning: **Brianna** (names saved to Supabase) or **Anonymous** (nothing saved).
-- Spin history and cooldowns are in memory only. A refresh clears them, and only Brianna's names come back.
+- On load, a popup asks which profile is spinning: **4B** or **5Math** (each has its own names saved to Supabase) or **Anonymous** (nothing saved).
+- Spin history and cooldowns are in memory only. A refresh clears them, and only the saved profiles' names come back.
 
 Built from [sosk-scaf](https://github.com/Meisosk/sosk-scaf); its sign-in, admin dashboard and analytics were removed.
 
@@ -11,7 +11,7 @@ Built from [sosk-scaf](https://github.com/Meisosk/sosk-scaf); its sign-in, admin
 
 1. `npm install`
 2. Fill in `.env` (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PORT`). Each line's comment says where to find the value.
-3. Run [supabase/schema.sql](supabase/schema.sql) once in the Supabase **SQL Editor**. It creates the `name_lists` table and Brianna's row.
+3. Run [supabase/schema.sql](supabase/schema.sql) once in the Supabase **SQL Editor**. It creates the `name_lists` table and the 4B and 5Math rows.
 
 ## Running
 
@@ -19,7 +19,7 @@ Built from [sosk-scaf](https://github.com/Meisosk/sosk-scaf); its sign-in, admin
 npm run dev       # API server + Vite together (dev:web runs Vite alone)
 ```
 
-Vite proxies `/api` to the Express server on `PORT`, so the server must be running for Brianna's names to load and save.
+Vite proxies `/api` to the Express server on `PORT`, so the server must be running for saved profiles' names to load and save.
 
 ## Deploying (Netlify)
 
@@ -36,10 +36,10 @@ src/
 ├── lib/cooldowns.ts               → sit-out rules (SIT_OUT_SPINS = 3)
 └── lib/names.ts                   → users list + API calls for saved names
 
-server/names.js                    → get/save names in Supabase (service role key, Brianna only)
+server/names.js                    → get/save names in Supabase (service role key, saved profiles only)
 server/index.js                    → local Express API for `npm run dev`
 netlify/functions/names.mjs        → the same API on Netlify
 supabase/schema.sql                → name_lists table (RLS on, no policies; server-only access)
 ```
 
-To add another saved user, add the name to `SAVED_USERS` in both `src/lib/names.ts` and `server/names.js`, then insert a row into `name_lists`.
+To add another saved profile, add the name to `SAVED_USERS` in both `src/lib/names.ts` and `server/names.js`, then insert a row into `name_lists`.

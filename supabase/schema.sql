@@ -11,5 +11,5 @@ create table if not exists name_lists (
 -- Only server/index.js, which uses the service role key, can.
 alter table name_lists enable row level security;
 
-insert into name_lists (user_name) values ('Brianna')
+insert into name_lists (user_name) values ('4B'), ('5Math')
 on conflict (user_name) do nothing;

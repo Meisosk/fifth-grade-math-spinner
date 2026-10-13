@@ -1,6 +1,6 @@
 // Saved name lists live in Supabase behind the Express server (see server/index.js).
 
-export const SAVED_USERS = ["Brianna"] as const;
+export const SAVED_USERS = ["4B", "5Math"] as const;
 export const ANONYMOUS = "Anonymous";
 
 export type SavedUser = (typeof SAVED_USERS)[number];

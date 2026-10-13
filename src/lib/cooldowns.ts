@@ -1,7 +1,7 @@
-// A picked name sits out this many spins, then rejoins the wheel.
+// A picked name sits out this many spins (stays on the wheel but can't be picked), then is pickable again.
 export const SIT_OUT_SPINS = 3;
 
-// Name -> spins left before it's back on the wheel. Names not in the map are on the wheel.
+// Name -> spins left before it can be picked again. Names not in the map can be picked.
 export type Cooldowns = Record<string, number>;
 
 export function afterSpin(cooldowns: Cooldowns, picked: string): Cooldowns {
@@ -13,9 +13,9 @@ export function afterSpin(cooldowns: Cooldowns, picked: string): Cooldowns {
   return next;
 }
 
-// Names on the wheel for the next spin. If everyone is sitting out (fewer than
+// Names the next spin can land on. If everyone is sitting out (fewer than
 // SIT_OUT_SPINS + 1 names), whoever is closest to coming back is let back early.
-export function namesOnWheel(names: string[], cooldowns: Cooldowns): string[] {
+export function pickableNames(names: string[], cooldowns: Cooldowns): string[] {
   const ready = names.filter((n) => !cooldowns[n]);
   if (ready.length > 0 || names.length === 0) return ready;
 

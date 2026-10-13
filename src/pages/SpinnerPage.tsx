@@ -16,7 +16,7 @@ import SpinSettings from "../components/SpinSettings";
 import SpinnerWheel from "../components/SpinnerWheel";
 import UserPickerDialog from "../components/UserPickerDialog";
 import WalkingCats from "../components/WalkingCats";
-import { afterSpin, namesOnWheel, type Cooldowns } from "../lib/cooldowns";
+import { afterSpin, pickableNames, type Cooldowns } from "../lib/cooldowns";
 import {
   fetchNames,
   isSavedUser,
@@ -65,6 +65,9 @@ export default function SpinnerPage() {
   const [spinMs, setSpinMs] = useState(DEFAULT_SPIN_SECONDS * 1000);
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
+  // Focus Spin Wheel: hide everything except the wheel, Spin button, settings and cats.
+  const [focusMode, setFocusMode] = useState(false);
+  const [sitOut, setSitOut] = useState(true);
 
   const spinTimer = useRef<number | undefined>(undefined);
   const saveTimer = useRef<number | undefined>(undefined);
@@ -72,8 +75,9 @@ export default function SpinnerPage() {
     null
   );
 
-  const wheel = namesOnWheel(names, cooldowns);
-  const sittingOut = names.filter((n) => cooldowns[n] && !wheel.includes(n));
+  // Every name stays on the wheel; sitting-out names just can't be picked.
+  const pickable = sitOut ? pickableNames(names, cooldowns) : names;
+  const sittingOut = names.filter((n) => cooldowns[n] && !pickable.includes(n));
 
   // Flush an unsaved edit if the page is closed or refreshed mid-debounce.
   useEffect(() => {
@@ -140,11 +144,11 @@ export default function SpinnerPage() {
   }
 
   function spin() {
-    if (spinning || wheel.length === 0) return;
+    if (spinning || pickable.length === 0) return;
 
-    const index = Math.floor(Math.random() * wheel.length);
-    const picked = wheel[index];
-    const slice = 360 / wheel.length;
+    const picked = pickable[Math.floor(Math.random() * pickable.length)];
+    const index = names.indexOf(picked);
+    const slice = 360 / names.length;
     // Land somewhere inside the picked slice, away from its edges.
     const target = index * slice + slice * (0.15 + Math.random() * 0.7);
     const current = ((rotation % 360) + 360) % 360;
@@ -159,7 +163,7 @@ export default function SpinnerPage() {
     spinTimer.current = window.setTimeout(() => {
       setSpinning(false);
       setWinner(picked);
-      setCooldowns((c) => afterSpin(c, picked));
+      if (sitOut) setCooldowns((c) => afterSpin(c, picked));
       setHistory((h) => [{ spin: h.length + 1, name: picked }, ...h]);
     }, duration);
   }
@@ -167,6 +171,12 @@ export default function SpinnerPage() {
   function reset() {
     setCooldowns({});
     setWinner(null);
+  }
+
+  // Turning sitting out off (or back on) starts everyone fresh.
+  function changeSitOut(on: boolean) {
+    setSitOut(on);
+    setCooldowns({});
   }
 
   const canEditNames = !!user && !loadingNames && !loadError && !spinning;
@@ -199,22 +209,39 @@ export default function SpinnerPage() {
       >
         <Stack
           direction="row"
-          sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}
+          sx={{
+            alignItems: "center",
+            justifyContent: focusMode ? "flex-end" : "space-between",
+            mb: 3,
+          }}
         >
-          <Typography variant="h4" sx={{ color: "primary.main", fontSize: "2.6rem" }}>
-            Name Spinner
-          </Typography>
+          {!focusMode && (
+            <Typography variant="h4" sx={{ color: "primary.main", fontSize: "2.6rem" }}>
+              Name Spinner
+            </Typography>
+          )}
           {user && (
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-              <Chip
-                label={isSavedUser(user) ? user : "Anonymous (not saved)"}
-                color="primary"
-                variant="outlined"
+              {!focusMode && (
+                <>
+                  <Chip
+                    label={isSavedUser(user) ? user : "Anonymous (not saved)"}
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Button size="small" onClick={switchUser} disabled={spinning}>
+                    Switch user
+                  </Button>
+                </>
+              )}
+              <SpinSettings
+                spinSeconds={spinSeconds}
+                onChange={setSpinSeconds}
+                focusMode={focusMode}
+                onFocusModeChange={setFocusMode}
+                sitOut={sitOut}
+                onSitOutChange={changeSitOut}
               />
-              <Button size="small" onClick={switchUser} disabled={spinning}>
-                Switch user
-              </Button>
-              <SpinSettings spinSeconds={spinSeconds} onChange={setSpinSeconds} />
             </Stack>
           )}
         </Stack>
@@ -222,132 +249,142 @@ export default function SpinnerPage() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "200px 1fr 340px" },
+            gridTemplateColumns: { xs: "1fr", md: focusMode ? "1fr" : "200px 1fr 340px" },
             gap: 3,
             alignItems: "start",
           }}
         >
           {/* History: left column on desktop, below everything on mobile */}
-          <Box sx={{ order: { xs: 3, md: 0 }, pt: 2 }}>
-            <SpinHistory history={history} />
-          </Box>
+          {!focusMode && (
+            <Box sx={{ order: { xs: 3, md: 0 }, pt: 2 }}>
+              <SpinHistory history={history} />
+            </Box>
+          )}
 
           {/* Wheel */}
           <Stack spacing={2} sx={{ alignItems: "center", pt: 5 /* room for the pencil pointer */ }}>
-            <SpinnerWheel names={wheel} rotation={rotation} spinMs={spinMs} />
+            <SpinnerWheel names={names} rotation={rotation} spinMs={spinMs} />
             <Stack direction="row" spacing={2}>
               <Button
                 variant="contained"
                 size="large"
                 onClick={spin}
-                disabled={spinning || wheel.length === 0}
+                disabled={spinning || pickable.length === 0}
                 sx={{ fontWeight: 700, px: 5 }}
               >
                 {spinning ? "Spinning…" : "Spin"}
               </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={reset}
-                disabled={spinning || Object.keys(cooldowns).length === 0}
-              >
-                Reset
-              </Button>
-            </Stack>
-            <Box sx={{ minHeight: 56 }} aria-live="polite">
-              {winner && (
-                <Typography
-                  variant="h3"
-                  sx={{ color: "primary.main", textAlign: "center" }}
+              {!focusMode && sitOut && (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={reset}
+                  disabled={spinning || Object.keys(cooldowns).length === 0}
                 >
-                  {winner}!
-                </Typography>
+                  Reset
+                </Button>
               )}
-              {!winner && names.length === 0 && user && !loadingNames && (
-                <Typography color="text.secondary">
-                  Add some names to get started.
-                </Typography>
-              )}
-            </Box>
+            </Stack>
+            {!focusMode && (
+              <Box sx={{ minHeight: 56 }} aria-live="polite">
+                {winner && (
+                  <Typography
+                    variant="h3"
+                    sx={{ color: "primary.main", textAlign: "center" }}
+                  >
+                    {winner}!
+                  </Typography>
+                )}
+                {!winner && names.length === 0 && user && !loadingNames && (
+                  <Typography color="text.secondary">
+                    Add some names to get started.
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Stack>
 
           {/* Names, sitting out */}
-          <Stack spacing={2}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                Names
-              </Typography>
-              {loadError && (
-                <Alert
-                  severity="error"
-                  sx={{ mb: 1 }}
-                  action={
-                    user && isSavedUser(user) ? (
-                      <Button color="inherit" size="small" onClick={() => loadNames(user)}>
-                        Retry
-                      </Button>
-                    ) : undefined
-                  }
-                >
-                  {loadError}. Is the server running?
-                </Alert>
-              )}
-              <Autocomplete
-                multiple
-                freeSolo
-                autoSelect
-                options={[]}
-                value={names}
-                disabled={!canEditNames}
-                onChange={(_, values) => changeNames(values)}
-                renderValue={(values, getItemProps) =>
-                  values.map((name, index) => {
-                    const { key, ...itemProps } = getItemProps({ index });
-                    return <Chip key={key} label={name} size="small" {...itemProps} />;
-                  })
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    placeholder={loadingNames ? "Loading…" : "Type a name, press Enter"}
-                  />
+          {!focusMode && (
+            <Stack spacing={2}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" sx={{ mb: 1 }}>
+                  Names
+                </Typography>
+                {loadError && (
+                  <Alert
+                    severity="error"
+                    sx={{ mb: 1 }}
+                    action={
+                      user && isSavedUser(user) ? (
+                        <Button color="inherit" size="small" onClick={() => loadNames(user)}>
+                          Retry
+                        </Button>
+                      ) : undefined
+                    }
+                  >
+                    {loadError}. Is the server running?
+                  </Alert>
                 )}
-              />
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-                {user && isSavedUser(user)
-                  ? {
-                      idle: `Saved to ${user}.`,
-                      saving: "Saving…",
-                      saved: `Saved to ${user}.`,
-                      error: "Couldn't save. Your next change will try again.",
-                    }[saveStatus]
-                  : "Anonymous: names aren't saved."}
-              </Typography>
-            </Paper>
-
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                Sitting out
-              </Typography>
-              {sittingOut.length === 0 ? (
-                <Typography color="text.secondary">Everyone is on the wheel.</Typography>
-              ) : (
-                <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
-                  {sittingOut.map((name) => (
-                    <Chip
-                      key={name}
-                      label={`${name} · back in ${cooldowns[name]}`}
-                      size="small"
-                      variant="outlined"
+                <Autocomplete
+                  multiple
+                  freeSolo
+                  autoSelect
+                  options={[]}
+                  value={names}
+                  disabled={!canEditNames}
+                  onChange={(_, values) => changeNames(values)}
+                  renderValue={(values, getItemProps) =>
+                    values.map((name, index) => {
+                      const { key, ...itemProps } = getItemProps({ index });
+                      return <Chip key={key} label={name} size="small" {...itemProps} />;
+                    })
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder={loadingNames ? "Loading…" : "Type a name, press Enter"}
                     />
-                  ))}
-                </Stack>
+                  )}
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                  {user && isSavedUser(user)
+                    ? {
+                        idle: `Saved to ${user}.`,
+                        saving: "Saving…",
+                        saved: `Saved to ${user}.`,
+                        error: "Couldn't save. Your next change will try again.",
+                      }[saveStatus]
+                    : "Anonymous: names aren't saved."}
+                </Typography>
+              </Paper>
+
+              {sitOut && (
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Sitting out
+                  </Typography>
+                  {sittingOut.length === 0 ? (
+                    <Typography color="text.secondary">Everyone can be picked.</Typography>
+                  ) : (
+                    <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
+                      {sittingOut.map((name) => (
+                        <Chip
+                          key={name}
+                          label={`${name} · ${cooldowns[name]} more ${cooldowns[name] === 1 ? "spin" : "spins"}`}
+                          size="small"
+                          variant="outlined"
+                        />
+                      ))}
+                    </Stack>
+                  )}
+                </Paper>
               )}
-            </Paper>
-          </Stack>
+            </Stack>
+          )}
         </Box>
       </Box>
-      <Footer />
+      {!focusMode && <Footer />}
       <WalkingCats />
     </Box>
   );
