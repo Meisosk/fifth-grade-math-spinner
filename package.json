@@ -1,0 +1,42 @@
+{
+  "name": "fifth-grade-math-spinner",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,blue \"npm run server\" \"vite\"",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "server": "node --watch --env-file=.env server/index.js",
+    "server:start": "node --env-file=.env server/index.js",
+    "dev:all": "npm run relink:ui && concurrently -n ui,api,web -c blue,green,magenta \"cd ../sosk-ui-lib && npm run dev:watch\" \"npm run server\" \"vite\"",
+    "relink:ui": "cd ../sosk-ui-lib && npm run build && npm link && cd ../fifth-grade-math-spinner && npm link sosk-ui-lib && rm -rf node_modules/.vite",
+    "dev:web": "vite"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^9.2.0",
+    "@mui/styled-engine": "^9.1.1",
+    "@supabase/supabase-js": "^2.110.1",
+    "concurrently": "^10.0.3",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "eslint": "^10.6.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.1"
+  }
+}
