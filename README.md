@@ -21,6 +21,10 @@ npm run dev       # API server + Vite together (dev:web runs Vite alone)
 
 Vite proxies `/api` to the Express server on `PORT`, so the server must be running for Brianna's names to load and save.
 
+## Deploying (Netlify)
+
+`netlify.toml` holds the build settings, sends `/api/names/*` to the Netlify Function, and serves `index.html` for every other path. In **Site configuration → Environment variables**, set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (the `VITE_` values aren't needed).
+
 ## Structure
 
 ```
@@ -32,8 +36,10 @@ src/
 ├── lib/cooldowns.ts               → sit-out rules (SIT_OUT_SPINS = 3)
 └── lib/names.ts                   → users list + API calls for saved names
 
-server/index.js                    → GET/PUT /api/names/:user (service role key, Brianna only)
+server/names.js                    → get/save names in Supabase (service role key, Brianna only)
+server/index.js                    → local Express API for `npm run dev`
+netlify/functions/names.mjs        → the same API on Netlify
 supabase/schema.sql                → name_lists table (RLS on, no policies; server-only access)
 ```
 
-To add another saved user, add the name to `SAVED_USERS` in both `src/lib/names.ts` and `server/index.js`, then insert a row into `name_lists`.
+To add another saved user, add the name to `SAVED_USERS` in both `src/lib/names.ts` and `server/names.js`, then insert a row into `name_lists`.
